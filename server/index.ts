@@ -81,7 +81,7 @@ io.on('connection', (socket) => {
   });
 });
 
-app.get('*', (req, res) => {
+app.get('/*path', (req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 const PORT = process.env.PORT || 3000;
