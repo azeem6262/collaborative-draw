@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
    
-    "rootDir": "./",          // Look for TS files in the current folder
+    "rootDir": "..",          // Look for TS files in the current folder
     "outDir": "./dist",       // Put compiled JS files here for Render to find
     
     
