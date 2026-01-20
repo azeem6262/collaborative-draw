@@ -12,14 +12,10 @@ const httpServer = createServer(app);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/**
- * PATH CORRECTION:
- * In production, this file is located at 'dist/server/index.js'.
- * To reach the project root, we must go UP two levels (../../).
- */
+
 const clientDistPath = process.env.NODE_ENV === 'production'
-  ? path.join(__dirname, '../../client/dist')
-  : path.join(__dirname, '../client/dist');
+  ? path.resolve(__dirname, '../../client/dist')
+  : path.resolve(__dirname, '../client/dist');
 
 // Serve the static files from the React app
 app.use(express.static(clientDistPath));
@@ -34,7 +30,6 @@ const io = new Server(httpServer, {
 });
 
 let allStrokes: Stroke[] = [];
-
 const activeStrokes = new Map<string, Stroke>();
 
 io.on('connection', (socket) => {
@@ -86,11 +81,7 @@ io.on('connection', (socket) => {
   });
 });
 
-/**
- * CATCH-ALL ROUTE:
- * Must use the corrected clientDistPath to locate index.html
- */
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
