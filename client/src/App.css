@@ -1,0 +1,99 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.canvas-layer-1 {
+  z-index: 1;
+}
+
+.canvas-layer-2 {
+  z-index: 2;
+}
+
+.toolbar {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 20px;
+  padding: 15px 25px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.toolbar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+  color: #333;
+}
+
+.toolbar-item span {
+  font-weight: 500;
+}
+
+.toolbar-item input[type="color"] {
+  width: 60px;
+  height: 40px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.toolbar-item input[type="range"] {
+  width: 150px;
+  cursor: pointer;
+}
+.canvas-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f0f0f0;
+  overflow: hidden;
+}
+
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  touch-action: none; /* Prevents scrolling while drawing on mobile */
+}
+
+.main-canvas {
+  z-index: 1; /* Bottom layer */
+}
+
+.draft-canvas {
+  z-index: 2; /* Top layer where the active line lives */
+  cursor: crosshair;
+}
