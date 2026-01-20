@@ -12,12 +12,17 @@ const httpServer = createServer(app);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-
+/**
+ * FINAL PATH LOGIC: 
+ * We use path.resolve with '..' to move from 'dist/server' back to the root.
+ */
 const clientDistPath = process.env.NODE_ENV === 'production'
   ? path.resolve(__dirname, '../../client/dist')
   : path.resolve(__dirname, '../client/dist');
 
-// Serve the static files from the React app
+// DEBUG LOG: Check this in your Render Logs!
+console.log('Server is looking for static files at:', clientDistPath);
+
 app.use(express.static(clientDistPath));
 
 const io = new Server(httpServer, {
@@ -34,7 +39,6 @@ const activeStrokes = new Map<string, Stroke>();
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
-
   socket.emit('load-history', allStrokes);
 
   socket.on('stroke-start', (data: { strokeId: string; userId: string; color: string; lineWidth: number; point: any }) => {
@@ -51,9 +55,7 @@ io.on('connection', (socket) => {
 
   socket.on('stroke-update', (data: { strokeId: string; point: any }) => {
     const stroke = activeStrokes.get(data.strokeId);
-    if (stroke) {
-      stroke.points.push(data.point);
-    }
+    if (stroke) stroke.points.push(data.point);
     socket.broadcast.emit('stroke-update', data);
   });
 
@@ -76,15 +78,19 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
     io.emit('user-disconnected', socket.id);
   });
 });
 
+/**
+ * CATCH-ALL ROUTE:
+ * Using the Express 5 compatible named parameter.
+ */
 app.get('/*path', (req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
+
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(`Server running on port ${PORT}`);
 });
