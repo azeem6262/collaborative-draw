@@ -2,10 +2,21 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import type { Stroke } from '../shared/types.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
 const httpServer = createServer(app);
 
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Path to the Vite build output
+const clientDistPath = path.join(__dirname, '../client/dist');
+
+// Serve the static files from the React app
+app.use(express.static(clientDistPath));
 
 const io = new Server(httpServer, {
   cors: {
@@ -15,7 +26,6 @@ const io = new Server(httpServer, {
     methods: ['GET', 'POST']
   }
 });
-
 
 let allStrokes: Stroke[] = [];
 
@@ -63,7 +73,6 @@ io.on('connection', (socket) => {
   // 5. Global Undo Logic
   socket.on('undo-stroke', (strokeId: string) => {
     allStrokes = allStrokes.filter(s => s.id !== strokeId);
-    // Notify all clients to remove this specific stroke
     io.emit('stroke-removed', strokeId);
   });
 
@@ -75,9 +84,13 @@ io.on('connection', (socket) => {
   // 7. Cleanup on Disconnect
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
-    // Broadcast disconnect so others can remove this user's cursor
     io.emit('user-disconnected', socket.id);
   });
+});
+
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
