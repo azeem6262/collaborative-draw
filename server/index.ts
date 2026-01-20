@@ -8,12 +8,18 @@ import { fileURLToPath } from 'url';
 const app = express();
 const httpServer = createServer(app);
 
-
+// --- Static File Serving Setup ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Path to the Vite build output
-const clientDistPath = path.join(__dirname, '../client/dist');
+/**
+ * PATH CORRECTION:
+ * In production, this file is located at 'dist/server/index.js'.
+ * To reach the project root, we must go UP two levels (../../).
+ */
+const clientDistPath = process.env.NODE_ENV === 'production'
+  ? path.join(__dirname, '../../client/dist')
+  : path.join(__dirname, '../client/dist');
 
 // Serve the static files from the React app
 app.use(express.static(clientDistPath));
@@ -29,16 +35,13 @@ const io = new Server(httpServer, {
 
 let allStrokes: Stroke[] = [];
 
-// Temporary storage for strokes currently in-progress
 const activeStrokes = new Map<string, Stroke>();
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // 1. Sync history to the new user
   socket.emit('load-history', allStrokes);
 
-  // 2. Real-time Stroke Start
   socket.on('stroke-start', (data: { strokeId: string; userId: string; color: string; lineWidth: number; point: any }) => {
     const newStroke: Stroke = {
       id: data.strokeId,
@@ -51,7 +54,6 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('stroke-start', data);
   });
 
-  // 3. Real-time Point Update
   socket.on('stroke-update', (data: { strokeId: string; point: any }) => {
     const stroke = activeStrokes.get(data.strokeId);
     if (stroke) {
@@ -60,7 +62,6 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('stroke-update', data);
   });
 
-  // 4. Stroke Completion (Commit to history)
   socket.on('stroke-end', (strokeId: string) => {
     const finishedStroke = activeStrokes.get(strokeId);
     if (finishedStroke) {
@@ -70,30 +71,30 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('stroke-end', strokeId);
   });
 
-  // 5. Global Undo Logic
   socket.on('undo-stroke', (strokeId: string) => {
     allStrokes = allStrokes.filter(s => s.id !== strokeId);
     io.emit('stroke-removed', strokeId);
   });
 
-  // 6. Presence: Mouse movement broadcasting
   socket.on('mouse-move', (data: { userId: string; point: any; color: string }) => {
     socket.broadcast.emit('user-moved', data);
   });
 
-  // 7. Cleanup on Disconnect
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
     io.emit('user-disconnected', socket.id);
   });
 });
 
-
+/**
+ * CATCH-ALL ROUTE:
+ * Must use the corrected clientDistPath to locate index.html
+ */
 app.get('*', (req, res) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 });
