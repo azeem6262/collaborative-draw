@@ -5,26 +5,30 @@ import type { Stroke } from '../shared/types.js';
 
 const app = express();
 const httpServer = createServer(app);
+
+
 const io = new Server(httpServer, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: process.env.NODE_ENV === 'production' 
+      ? 'https://your-frontend-app.onrender.com' 
+      : 'http://localhost:5173',
     methods: ['GET', 'POST']
   }
 });
 
-// The "Truth": Completed strokes sent to all new users
+
 let allStrokes: Stroke[] = [];
 
-// Temporary storage for strokes currently being drawn
+// Temporary storage for strokes currently in-progress
 const activeStrokes = new Map<string, Stroke>();
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // 1. Send existing history to the newcomer
+  // 1. Sync history to the new user
   socket.emit('load-history', allStrokes);
 
-  // 2. Start of a new real-time stroke
+  // 2. Real-time Stroke Start
   socket.on('stroke-start', (data: { strokeId: string; userId: string; color: string; lineWidth: number; point: any }) => {
     const newStroke: Stroke = {
       id: data.strokeId,
@@ -37,7 +41,7 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('stroke-start', data);
   });
 
-  // 3. Middle of a stroke (receiving new points)
+  // 3. Real-time Point Update
   socket.on('stroke-update', (data: { strokeId: string; point: any }) => {
     const stroke = activeStrokes.get(data.strokeId);
     if (stroke) {
@@ -46,7 +50,7 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('stroke-update', data);
   });
 
-  // 4. Completion of a stroke (moving from active to permanent)
+  // 4. Stroke Completion (Commit to history)
   socket.on('stroke-end', (strokeId: string) => {
     const finishedStroke = activeStrokes.get(strokeId);
     if (finishedStroke) {
@@ -56,10 +60,10 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('stroke-end', strokeId);
   });
 
-  // 5. Global Undo logic
+  // 5. Global Undo Logic
   socket.on('undo-stroke', (strokeId: string) => {
     allStrokes = allStrokes.filter(s => s.id !== strokeId);
-    // Use io.emit so EVERYONE (including the sender) updates their state
+    // Notify all clients to remove this specific stroke
     io.emit('stroke-removed', strokeId);
   });
 
@@ -68,12 +72,10 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('user-moved', data);
   });
 
+  // 7. Cleanup on Disconnect
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
-  });
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-    // Tell everyone to remove this user's cursor
+    // Broadcast disconnect so others can remove this user's cursor
     io.emit('user-disconnected', socket.id);
   });
 });
