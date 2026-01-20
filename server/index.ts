@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
  * We use path.resolve with '..' to move from 'dist/server' back to the root.
  */
 const clientDistPath = process.env.NODE_ENV === 'production'
-  ? path.resolve(__dirname, '../../client/dist')
+  ? path.resolve(__dirname, '../../../client/dist') 
   : path.resolve(__dirname, '../client/dist');
 
 // DEBUG LOG: Check this in your Render Logs!
