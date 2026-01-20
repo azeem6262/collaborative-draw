@@ -10,7 +10,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? 'https://your-frontend-app.onrender.com' 
+      ? 'https://collaborative-draw-q2f9.onrender.com' 
       : 'http://localhost:5173',
     methods: ['GET', 'POST']
   }
